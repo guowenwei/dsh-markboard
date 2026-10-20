@@ -1,0 +1,5 @@
+# dsh-markboard bundle layer: one Host row; the browser half is discovered from
+# this package's `dsh.client` declaration in package.json.
+- insert:
+    - id: markboard
+      name: dsh-markboard

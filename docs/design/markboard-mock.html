@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>标记板 · 设计稿</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #eceef1; }
+  body { font-family: "Segoe UI", "Microsoft YaHei", system-ui, -apple-system, sans-serif; color: #1b1c1f; -webkit-font-smoothing: antialiased; }
+  .stage { padding: 24px 28px 40px; display: flex; flex-direction: column; gap: 18px; align-items: flex-start; }
+  .caption { font-size: 13px; color: #4b5058; display:flex; align-items:center; gap:10px; }
+  .caption b { font-weight: 600; color:#1b1c1f; }
+  .frame { position: relative; width: 1280px; height: 800px; background: #fff; border-radius: 14px; overflow: hidden;
+           box-shadow: 0 1px 2px rgba(16,24,40,.06), 0 12px 32px rgba(16,24,40,.10); display: flex; }
+
+  /* left rail */
+  .rail { width: 52px; flex: 0 0 52px; border-right: .5px solid #e6e8eb; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 0; background:#fbfbfc; }
+  .rail .logo { width: 26px; height: 26px; border-radius: 8px; background: linear-gradient(145deg,#2f6bff,#7aa2ff); margin-bottom: 10px; }
+  .rail .ic { width: 34px; height: 34px; border-radius: 9px; display:flex; align-items:center; justify-content:center; color:#7b8189; font-size: 15px; }
+  .rail .ic.on { background:#eef2ff; color:#2f6bff; }
+  .rail .sp { flex: 1; }
+
+  /* session list */
+  .sessions { width: 232px; flex: 0 0 232px; border-right: .5px solid #e6e8eb; background:#fbfbfc; display:flex; flex-direction: column; }
+  .sessions .head { display:flex; align-items:center; justify-content:space-between; padding: 14px 14px 8px; font-size: 12px; color:#8a9098; letter-spacing:.02em; }
+  .sessions .new { font-size: 12px; color:#2f6bff; background:#eef2ff; border-radius: 8px; padding: 4px 8px; }
+  .sess { padding: 9px 12px; margin: 1px 8px; border-radius: 9px; font-size: 12.5px; color:#3c4149; display:flex; flex-direction: column; gap: 3px; }
+  .sess .t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sess .m { font-size: 11px; color:#9aa0a8; }
+  .sess.on { background:#eef1f5; }
+  .sess.on .t { font-weight: 600; }
+
+  /* main */
+  .main { flex: 1; min-width: 0; display:flex; flex-direction:column; background:#fff; }
+  .topbar { height: 46px; flex: 0 0 46px; display:flex; align-items:center; gap: 10px; padding: 0 16px 0 18px; border-bottom: .5px solid #eceef1; }
+  .topbar .title { font-size: 13.5px; font-weight: 600; }
+  .topbar .sub { font-size: 11.5px; color:#9aa0a8; }
+  .topbar .grow { flex: 1; }
+  .hbtn { height: 28px; padding: 0 10px; border-radius: 8px; display:flex; align-items:center; gap:6px; font-size: 12px; color:#4b5058; border:.5px solid #e3e5e9; background:#fff; }
+  .hbtn.hot { color:#2f6bff; border-color:#cad8ff; background:#f5f8ff; }
+
+  .flow { flex: 1; overflow: hidden; padding: 18px 30px 8px; display:flex; flex-direction: column; gap: 18px; }
+  .turn { display:flex; flex-direction: column; gap: 10px; }
+  .userrow { display:flex; justify-content: flex-end; }
+  .bubble { max-width: 76%; background:#f2f3f5; border-radius: 16px 16px 4px 16px; padding: 10px 14px; font-size: 13.5px; line-height: 1.7; color:#22252a; }
+  .answer { font-size: 13.5px; line-height: 1.85; color:#25282d; padding-right: 8px; }
+  .answer p { margin: 0 0 8px; }
+  .answer .k { font-weight: 600; }
+  .answer code { background:#f3f4f6; border-radius: 5px; padding: 1px 5px; font-size: 12px; font-family: "Cascadia Code", Consolas, monospace; }
+  .actions { display:flex; align-items:center; gap: 2px; margin-top: 2px; }
+  .abtn { height: 26px; min-width: 26px; padding: 0 7px; border-radius: 7px; display:flex; align-items:center; gap: 5px; font-size: 12px; color:#8a9098; }
+  .abtn:hover { background:#f3f4f6; }
+  .abtn.mark { color:#2f6bff; background:#eef2ff; font-weight: 600; }
+  .abtn .ic { font-size: 13px; }
+  .tsep { width:1px; height:12px; background:#e6e8eb; margin: 0 6px; }
+  .hint { font-size: 11.5px; color:#9aa0a8; margin-left: 8px; }
+  .tag { display:inline-flex; align-items:center; gap:4px; height: 20px; padding: 0 7px; border-radius: 6px; background:#f3f4f6; color:#6b7178; font-size: 11px; }
+
+  /* composer */
+  .composerwrap { padding: 10px 30px 18px; }
+  .composer { border: .5px solid #e1e3e7; border-radius: 16px; background:#fff; box-shadow: 0 1px 2px rgba(16,24,40,.04); padding: 10px 12px 8px; }
+  .quote { border-left: 2.5px solid #b9c9f8; background:#f7f9ff; border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; position: relative; }
+  .quote .qhead { display:flex; align-items:center; gap:6px; font-size: 11px; color:#6b7ba6; margin-bottom: 4px; }
+  .quote .qbody { font-size: 12.5px; line-height: 1.65; color:#3a4250; }
+  .quote .qx { position:absolute; right: 8px; top: 6px; color:#9aa4bb; font-size: 12px; }
+  .qtext { background:#f7f8fa; border-radius: 10px; padding: 8px 10px; margin-bottom: 6px; font-size: 12.5px; line-height: 1.7; color:#3a4250; }
+  .qline { white-space: pre-wrap; }
+  .qhint { font-size: 10.5px; color:#a2a7ae; margin: 0 2px 6px; }
+  .ph { color:#a9aeb5; font-size: 13px; padding: 3px 2px 10px; }
+  .cbar { display:flex; align-items:center; gap: 8px; padding-top: 6px; }
+  .cbar .grow { flex:1; }
+  .chip { height: 24px; padding: 0 8px; border-radius: 7px; border:.5px solid #e3e5e9; font-size: 11.5px; color:#5c626a; display:flex; align-items:center; gap:5px; }
+  .send { width: 30px; height: 30px; border-radius: 9px; background:#1b1c1f; color:#fff; display:flex; align-items:center; justify-content:center; font-size: 14px; }
+
+  /* right sidebar */
+  .rightbar { width: 356px; flex: 0 0 356px; border-left: .5px solid #e6e8eb; background:#fbfbfc; display:flex; flex-direction: column; }
+  .tabs { display:flex; align-items:center; gap: 4px; padding: 8px 10px 0; }
+  .tab { height: 28px; padding: 0 10px; border-radius: 8px 8px 0 0; font-size: 12px; color:#6b7178; display:flex; align-items:center; gap:5px; }
+  .tab.on { background:#fff; color:#1b1c1f; font-weight: 600; border:.5px solid #e6e8eb; border-bottom-color:#fff; position: relative; top: .5px; }
+  .tabplus { margin-left:auto; color:#9aa0a8; font-size: 15px; padding: 0 6px; }
+  .panel { flex:1; background:#fff; border-top: .5px solid #e6e8eb; display:flex; flex-direction: column; min-height: 0; }
+  .phead { padding: 12px 14px 8px; display:flex; flex-direction:column; gap: 9px; }
+  .ptitle { display:flex; align-items:center; gap: 8px; font-size: 13px; font-weight: 600; }
+  .ptitle .count { font-size: 11px; color:#2f6bff; background:#eef2ff; border-radius: 999px; padding: 1px 7px; font-weight: 600; }
+  .ptitle .grow { flex:1; }
+  .ptitle .ghost { font-size: 11.5px; color:#8a9098; }
+  .search { height: 30px; border-radius: 9px; background:#f4f5f7; display:flex; align-items:center; gap: 7px; padding: 0 10px; color:#9aa0a8; font-size: 12px; }
+  .filters { display:flex; gap: 6px; }
+  .f { height: 24px; padding: 0 9px; border-radius: 999px; font-size: 11.5px; display:flex; align-items:center; gap:5px; color:#5c626a; border:.5px solid #e3e5e9; background:#fff; }
+  .f.on { background:#1b1c1f; color:#fff; border-color:#1b1c1f; }
+  .plist { flex:1; overflow: hidden; padding: 4px 10px 10px; display:flex; flex-direction: column; gap: 8px; }
+  .card { border: .5px solid #e6e8eb; border-radius: 12px; background:#fff; padding: 9px 10px 8px; display:flex; flex-direction: column; gap: 6px; }
+  .card.sel { border-color:#c9d7fb; box-shadow: 0 0 0 2px #eef2ff; }
+  .chead { display:flex; align-items:center; gap: 6px; }
+  .tno { font-size: 10.5px; font-weight: 700; color:#2f6bff; background:#eef2ff; border-radius: 5px; padding: 1px 5px; }
+  .cname { font-size: 12.5px; font-weight: 600; color:#1f2227; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex: 1; }
+  .cmeta { font-size: 10.5px; color:#9aa0a8; white-space: nowrap; }
+  .cprev { font-size: 11.5px; line-height: 1.55; color:#6b7178; max-height: 36px; overflow: hidden; }
+  .cprev .u { color:#8d939b; }
+  .cfoot { display:flex; align-items:center; gap: 6px; }
+  .cact { height: 22px; padding: 0 8px; border-radius: 6px; font-size: 11px; color:#4b5058; border:.5px solid #e6e8eb; display:flex; align-items:center; gap:4px; }
+  .cact.pri { color:#2f6bff; border-color:#cad8ff; background:#f5f8ff; }
+  .cfoot .grow { flex: 1; }
+  .cfoot .del { color:#b1b6bd; font-size: 13px; }
+  .edit { display:flex; flex-direction: column; gap: 6px; }
+  .edit input { height: 28px; border-radius: 8px; border: .5px solid #c9d7fb; box-shadow: 0 0 0 2px #eef2ff; padding: 0 8px; font-size: 12px; font-family: inherit; color:#1f2227; }
+  .editrow { display:flex; gap: 6px; justify-content: flex-end; }
+  .save { height: 24px; padding: 0 10px; border-radius: 7px; background:#2f6bff; color:#fff; font-size: 11px; display:flex; align-items:center; }
+  .cancel { height: 24px; padding: 0 10px; border-radius: 7px; border:.5px solid #e6e8eb; color:#6b7178; font-size: 11px; display:flex; align-items:center; }
+  .sessbadge { font-size: 10.5px; color:#6b7178; background:#f4f5f7; border-radius: 5px; padding: 1px 5px; max-width: 120px; overflow:hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pfoot { border-top: .5px solid #eceef1; padding: 8px 14px 10px; font-size: 10.5px; color:#9aa0a8; display:flex; align-items:center; gap: 6px; }
+  .kbd { border:.5px solid #dfe2e6; border-bottom-width: 1.5px; border-radius: 5px; padding: 0 4px; font-size: 10px; color:#5c626a; background:#fff; }
+
+  /* toast + annotations */
+  .toast.b { bottom: 214px; }
+  .toast { position:absolute; left: 50%; transform: translateX(-50%); bottom: 128px; background:#1f2227; color:#fff; border-radius: 10px; padding: 8px 12px; font-size: 12px; display:flex; align-items:center; gap: 10px; box-shadow: 0 8px 24px rgba(16,24,40,.18); }
+  .toast .undo { color:#8fb0ff; }
+  .anno { display:inline-flex; align-items:center; justify-content:center; width: 17px; height: 17px; border-radius: 50%; background:#2f6bff; color:#fff; font-size: 10.5px; font-weight: 700; margin-left: 6px; vertical-align: 1px; }
+  .legend { display:flex; flex-wrap: wrap; gap: 8px 18px; max-width: 1280px; font-size: 12px; color:#4b5058; }
+  .legend div { display:flex; align-items:center; gap: 7px; }
+  .legend .n { width: 17px; height: 17px; border-radius: 50%; background:#2f6bff; color:#fff; font-size: 10.5px; font-weight: 700; display:flex; align-items:center; justify-content:center; }
+  .legend .n.g { background:#0f9d58; }
+  .legend .n.o { background:#e8710a; }
+  .legend .n.p { background:#8b5cf6; }
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <div class="caption"><b>A · 标记一轮对话</b><span>在任意一轮的操作行点「标记」，就地起个任务名；右侧「标记」Tab 实时出现这张卡片。</span></div>
+
+  <div class="frame" id="frameA">
+    <div class="rail">
+      <div class="logo"></div>
+      <div class="ic on">✳</div><div class="ic">⌕</div><div class="ic">☰</div>
+      <div class="sp"></div>
+      <div class="ic">⚙</div>
+    </div>
+
+    <div class="sessions">
+      <div class="head"><span>会话</span><span class="new">+ 新建</span></div>
+      <div class="sess on"><div class="t">eTMF 文档模块重构</div><div class="m">刚刚 · 12 轮</div></div>
+      <div class="sess"><div class="t">Liquibase 脚本排查</div><div class="m">昨天 · 8 轮</div></div>
+      <div class="sess"><div class="t">侧栏插件验证</div><div class="m">昨天 · 26 轮</div></div>
+      <div class="sess"><div class="t">首页视觉走查</div><div class="m">10-18 · 9 轮</div></div>
+    </div>
+
+    <div class="main">
+      <div class="topbar">
+        <div class="title">eTMF 文档模块重构</div>
+        <div class="sub">DeepSeek V4.1</div>
+        <div class="grow"></div>
+        <div class="hbtn hot">🔖 标记 3 <span class="anno">2</span></div>
+        <div class="hbtn">⤴ 分享</div>
+      </div>
+
+      <div class="flow">
+        <div class="turn">
+          <div class="userrow"><div class="bubble">先把文档上传的校验顺序理清楚，别一上来就落库。</div></div>
+          <div class="answer">
+            <p>建议按 <span class="k">租户 → 文件类型 → 大小/病毒 → 元数据完整性</span> 的顺序逐层拦截，任何一层失败都不写业务表，只落一条失败审计。</p>
+            <p>落库放在同一个事务里，先写 <code>etmf_document</code>，再写 <code>etmf_document_version</code>。</p>
+          </div>
+          <div class="actions">
+            <div class="abtn"><span class="ic">⧉</span>复制</div>
+            <div class="abtn"><span class="ic">⑂</span>分支</div>
+            <div class="abtn"><span class="ic">🔖</span>标记</div>
+            <div class="tsep"></div>
+            <div class="abtn"><span class="ic">◔</span>用量</div>
+            <div class="hint">第 1 轮</div>
+          </div>
+        </div>
+
+        <div class="turn">
+          <div class="userrow"><div class="bubble">那就按方案 B 落地，注意不要动已经执行过的 Liquibase changeset。</div></div>
+          <div class="answer">
+            <p>已按方案 B 拆成三步：<span class="k">① 新增校验链服务</span>、<span class="k">② 上传入口改为调用链</span>、<span class="k">③ 补一条新的 changeset</span>。已执行的 changeset 一律不改，新增文件用 <code>etmf_</code> 前缀。</p>
+          </div>
+          <div class="actions">
+            <div class="abtn"><span class="ic">⧉</span>复制</div>
+            <div class="abtn"><span class="ic">⑂</span>分支</div>
+            <div class="abtn mark"><span class="ic">🔖</span>已标记 <span class="anno">1</span></div>
+            <div class="tsep"></div>
+            <div class="abtn"><span class="ic">◔</span>用量</div>
+            <div class="hint">第 3 轮 · 刚刚</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="composerwrap">
+        <div class="composer">
+          <div class="ph">继续输入，或输入 @ 引用文件…</div>
+          <div class="cbar">
+            <div class="chip">📎 附件</div>
+            <div class="chip">/ 命令</div>
+            <div class="grow"></div>
+            <div class="chip">V4.1 · 推理中</div>
+            <div class="send">↑</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rightbar">
+      <div class="tabs">
+        <div class="tab">文件</div>
+        <div class="tab">浏览器</div>
+        <div class="tab on">🔖 标记 3 <span class="anno">3</span></div>
+        <div class="tabplus">+</div>
+      </div>
+      <div class="panel">
+        <div class="phead">
+          <div class="ptitle"><span>标记</span><span class="count">3</span><span class="grow"></span><span class="hbtn" style="height:24px;font-size:11.5px">＋ 新建</span></div>
+          <div class="search">⌕ 搜索标题、内容或轮次</div>
+          <div class="filters">
+            <div class="f on">本会话 3</div>
+            <div class="f">全部会话 7</div>
+            
+          </div>
+        </div>
+        <div class="plist">
+          <div class="card sel">
+            <div class="chead"><span class="tno">T3</span><span class="cname">方案 B 三步落地</span><span class="cmeta">刚刚</span></div>
+            <div class="cprev"><span class="u">那就按方案 B 落地，注意不要动已经执行过的 Liquibase changeset。</span></div>
+            <div class="edit"><input value="方案 B 三步落地"><div class="editrow"><div class="cancel">取消</div><div class="save">保存</div></div></div>
+          </div>
+          <div class="card">
+            <div class="chead"><span class="tno">T2</span><span class="cname">校验顺序（任务）</span><span class="cmeta">12 分钟前</span></div>
+            <div class="cprev"><span class="u">先把文档上传的校验顺序理清楚，别一上来就落库。</span> 租户 → 文件类型 → 大小/病毒 → 元数据完整性…</div>
+            <div class="cfoot">
+              <div class="cact pri">↩ 跳转</div>
+              <div class="cact">⤵ 填入输入框</div>
+              <div class="grow"></div>
+              <div class="cact del">⋯</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="chead"><span class="tno">T1</span><span class="cname">事务边界</span><span class="cmeta">昨天</span></div>
+            <div class="cprev"><span class="u">落库放在同一个事务里…</span></div>
+            <div class="cfoot">
+              <div class="cact pri">↩ 跳转</div>
+              <div class="cact">⤵ 填入输入框</div>
+              <div class="grow"></div>
+              <div class="cact del">⋯</div>
+            </div>
+          </div>
+        </div>
+        <div class="pfoot">按 <span class="kbd">Ctrl</span><span class="kbd">⇧</span><span class="kbd">B</span> 随时打开标记板 · 标记保存在本机</div>
+      </div>
+    </div>
+
+    <div class="toast">🔖 已标记 · 第 3 轮「方案 B 三步落地」<span class="undo">撤销</span></div>
+  </div>
+
+  <div class="legend">
+    <div><span class="n">1</span>每轮已完成的回答下方，操作行新增「标记」按钮；已标记显示为蓝色实心</div>
+    <div><span class="n">2</span>会话头部显示当前会话的标记数与入口，侧栏收起时也能打开</div>
+    <div><span class="n">3</span>右侧栏新增「标记」Tab，与文件、浏览器并列，随会话切换</div>
+  </div>
+
+  <div class="caption" style="margin-top: 14px"><b>B · 跨会话浏览 + 一键填入输入框</b><span>「全部会话」汇总所有标记；点「填入输入框」把该轮内容作为引用块插入当前草稿。</span></div>
+
+  <div class="frame" id="frameB">
+    <div class="rail">
+      <div class="logo"></div>
+      <div class="ic on">✳</div><div class="ic">⌕</div><div class="ic">☰</div>
+      <div class="sp"></div>
+      <div class="ic">⚙</div>
+    </div>
+
+    <div class="sessions">
+      <div class="head"><span>会话</span><span class="new">+ 新建</span></div>
+      <div class="sess on"><div class="t">eTMF 文档模块重构</div><div class="m">刚刚 · 12 轮</div></div>
+      <div class="sess"><div class="t">Liquibase 脚本排查</div><div class="m">昨天 · 8 轮</div></div>
+      <div class="sess"><div class="t">侧栏插件验证</div><div class="m">昨天 · 26 轮</div></div>
+      <div class="sess"><div class="t">首页视觉走查</div><div class="m">10-18 · 9 轮</div></div>
+    </div>
+
+    <div class="main">
+      <div class="topbar">
+        <div class="title">eTMF 文档模块重构</div>
+        <div class="sub">DeepSeek V4.1</div>
+        <div class="grow"></div>
+        <div class="hbtn hot">🔖 标记 3</div>
+        <div class="hbtn">⤴ 分享</div>
+      </div>
+
+      <div class="flow">
+        <div class="turn">
+          <div class="userrow"><div class="bubble">先把文档上传的校验顺序理清楚，别一上来就落库。</div></div>
+          <div class="answer">
+            <p>建议按 <span class="k">租户 → 文件类型 → 大小/病毒 → 元数据完整性</span> 的顺序逐层拦截，任何一层失败都不写业务表，只落一条失败审计。</p>
+          </div>
+          <div class="actions">
+            <div class="abtn"><span class="ic">⧉</span>复制</div>
+            <div class="abtn"><span class="ic">⑂</span>分支</div>
+            <div class="abtn"><span class="ic">🔖</span>标记</div>
+            <div class="tsep"></div>
+            <div class="abtn"><span class="ic">◔</span>用量</div>
+          </div>
+        </div>
+        <div class="turn">
+          <div class="userrow"><div class="bubble">那就按方案 B 落地，注意不要动已经执行过的 Liquibase changeset。</div></div>
+          <div class="answer">
+            <p>已按方案 B 拆成三步：<span class="k">① 新增校验链服务</span>、<span class="k">② 上传入口改为调用链</span>、<span class="k">③ 补一条新的 changeset</span>。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="composerwrap">
+        <div class="composer">
+          <div class="qtext">
+            <div class="qline">&gt; 标记 · eTMF 文档模块重构 · 第 3 轮</div>
+            <div class="qline">&gt; 已按方案 B 拆成三步：① 新增校验链服务 ② 上传入口改为调用链 ③ 补一条新的 changeset。已执行的 changeset 一律不改。</div>
+            <div class="qline"></div>
+          </div>
+          <div class="qhint">↑ 引用以纯文本插入，可像普通草稿一样编辑或整段删除</div>
+          <div class="ph">在这基础上补充：第三步的 changeset 命名想用…</div>
+          <div class="cbar">
+            <div class="chip">📎 附件</div>
+            <div class="chip">/ 命令</div>
+            <div class="grow"></div>
+            <div class="chip">V4.1</div>
+            <div class="send">↑</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rightbar">
+      <div class="tabs">
+        <div class="tab">文件</div>
+        <div class="tab">浏览器</div>
+        <div class="tab on">🔖 标记 7</div>
+        <div class="tabplus">+</div>
+      </div>
+      <div class="panel">
+        <div class="phead">
+          <div class="ptitle"><span>标记</span><span class="count">7</span><span class="grow"></span><span class="hbtn" style="height:24px;font-size:11.5px">＋ 新建</span></div>
+          <div class="search">⌕ changeset</div>
+          <div class="filters">
+            <div class="f">本会话 3</div>
+            <div class="f on">全部会话 7</div>
+            
+          </div>
+        </div>
+        <div class="plist">
+          <div class="card">
+            <div class="chead"><span class="tno">T3</span><span class="cname">方案 B 三步落地</span><span class="cmeta">刚刚</span></div>
+            <div class="cprev"><span class="u">那就按方案 B 落地…</span> ① 新增校验链服务 ② 上传入口改为调用链 ③ 补一条新的 changeset</div>
+            <div class="cfoot">
+              <span class="sessbadge">eTMF 文档模块重构</span>
+              <div class="grow"></div>
+              <div class="cact pri">↩ 跳转</div>
+              <div class="cact">⤵ 填入</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="chead"><span class="tno">T2</span><span class="cname">校验顺序（任务）</span><span class="cmeta">12 分钟前</span></div>
+            <div class="cprev"><span class="u">先把文档上传的校验顺序理清楚…</span> 租户 → 文件类型 → 大小/病毒 → 元数据完整性</div>
+            <div class="cfoot">
+              <span class="sessbadge">eTMF 文档模块重构</span>
+              <div class="grow"></div>
+              <div class="cact pri">↩ 跳转</div>
+              <div class="cact">⤵ 填入</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="chead"><span class="tno">T5</span><span class="cname">changeset 不可回改</span><span class="cmeta">昨天 18:20</span></div>
+            <div class="cprev"><span class="u">已经执行过的 changeset 还能改吗？</span> 不能。Liquibase 用 checksum 校验…</div>
+            <div class="cfoot">
+              <span class="sessbadge">Liquibase 脚本排查</span>
+              <div class="grow"></div>
+              <div class="cact pri">↩ 跳转</div>
+              <div class="cact">⤵ 填入</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="chead"><span class="tno">T9</span><span class="cname">右侧栏 tab 注册方式</span><span class="cmeta">昨天 10:05</span></div>
+            <div class="cprev"><span class="u">侧栏 tab 怎么加？</span> ctx.sidebarRightTabs.register 分两段…</div>
+            <div class="cfoot">
+              <span class="sessbadge">侧栏插件验证</span>
+              <div class="grow"></div>
+              <div class="cact pri">↩ 跳转</div>
+              <div class="cact">⤵ 填入</div>
+            </div>
+          </div>
+        </div>
+        <div class="pfoot">↑ ↓ 选择 · <span class="kbd">Enter</span> 跳转 · <span class="kbd">⌘</span><span class="kbd">Enter</span> 填入输入框</div>
+      </div>
+    </div>
+
+    <div class="toast b">⤵ 已填入输入框 · 可继续编辑后再发送<span class="undo">撤销</span></div>
+  </div>
+
+  <div class="legend">
+    <div><span class="n g">4</span>「填入输入框」写入一个可删除的引用块，标明来源会话与轮次，正文可继续编辑</div>
+    <div><span class="n g">5</span>「全部会话」视图给每张卡片加来源会话徽标，跨会话汇总</div>
+    <div><span class="n o">6</span>跳转走内核 loadThrough，未加载的历史自动补载，落点高亮闪一下</div>
+    <div><span class="n p">7</span>所有数据存本机（localStorage），不经过宿主服务，无需重启</div>
+  </div>
+
+</div>
+</body>
+</html>
+
+
+
