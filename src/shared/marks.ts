@@ -164,6 +164,37 @@ export function draftText(mark: Mark, turnLabel: string): string {
   return `> 标记 · ${title} · ${turnLabel}\n> ${body}\n\n`
 }
 
+/** Where one fill lands. */
+export interface FillTarget {
+  /** Session owning the composer that receives the quote. */
+  readonly sessionId: string
+  /**
+   * `replace` when the quote returns to its own Turn's Session, `append` when it
+   * is carried into another one, where text already typed must survive.
+   */
+  readonly mode: 'replace' | 'append'
+}
+
+/**
+ * Decide which composer a mark's fill goes to.
+ *
+ * The composer on screen wins over the mark's own Session: quoting a card from
+ * another conversation must not navigate away from the one being typed in.
+ * @param mark - the mark being filled.
+ * @param into - Session owning the composer the caller wants, if it knows it.
+ * @param mounted - Session currently on screen.
+ * @returns the target, or `undefined` when no Session can take the text.
+ */
+export function fillTarget(
+  mark: Pick<Mark, 'sessionId'>,
+  into: string | undefined,
+  mounted: string | undefined,
+): FillTarget | undefined {
+  const sessionId = into !== undefined && into !== '' ? into : mounted ?? ''
+  if (sessionId === '') return undefined
+  return { sessionId, mode: sessionId === mark.sessionId ? 'replace' : 'append' }
+}
+
 /**
  * Parse a persisted payload.
  * Unknown or malformed rows are dropped rather than repaired: a partial mark

@@ -157,7 +157,7 @@ export const MarkboardBody = memo(function MarkboardBody({ sessionId, board, t }
                   <Icon path={ICON_ARROW} size={12} />
                   {t('action.jump')}
                 </button>
-                <button type="button" className="mb-btn" onClick={() => { board.fill(mark) }}>
+                <button type="button" className="mb-btn" onClick={() => { board.fill(mark, sessionId) }}>
                   <Icon path={ICON_FILL} size={12} />
                   {t('action.fill')}
                 </button>

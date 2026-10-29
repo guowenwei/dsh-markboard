@@ -23,7 +23,7 @@ A **conversation markboard** for the [DeepSeek Harness](https://github.com/deeps
 - **Right-Sidebar page** — its own tab beside Files and Browser, with "this session" / "all sessions" scopes and search over labels, content, and turn numbers.
 - **Rename and delete** — click a card's title to rename it; deletion comes with an undo.
 - **Jump back** — opens the owning session and scrolls the turn into view. When that turn is outside the loaded window, history is paged in first through the kernel's exact `loadThrough(seq)`, and the landing row flashes once.
-- **Fill the composer** — writes the turn's answer into the current draft as a plain-text quote (`> 标记 · session · turn N`) that you can keep editing or delete; the previous draft is restorable.
+- **Fill the composer** — writes the turn's answer into the current draft as a plain-text quote (`> 标记 · session · turn N`) that you can keep editing or delete; the previous draft is restorable. A card from another session fills the composer you are already typing in, without switching sessions, and appends after any existing draft instead of replacing it.
 - **Cross-tab sync** — another tab of the same origin writing marks updates this one.
 - **Bilingual** copy that follows the interface language.
 

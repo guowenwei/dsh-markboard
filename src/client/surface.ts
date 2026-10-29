@@ -10,14 +10,14 @@
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import type { SessionId, SessionSeq } from '@deepseek-ai/dsh-session/types'
 import type { ObservableSnapshot } from '@deepseek-ai/dsh-client-store'
-import type {} from '@deepseek-ai/dsh-api-session-controller/client'
+import type { SessionBinding } from '@deepseek-ai/dsh-api-session-controller/client'
 import type {} from '@deepseek-ai/dsh-client-ui-workspace/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
-import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type { DraftInitializationOptions, DraftInitializationResult } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import { TAB_KIND } from './kind.ts'
 import type { Mark } from '../shared/marks.ts'
-import { defaultLabel, draftText } from '../shared/marks.ts'
+import { defaultLabel, draftText, fillTarget } from '../shared/marks.ts'
 import type { Markboard } from '../shared/store.ts'
 
 /** The subset of the Chat node store the mark action reads. */
@@ -91,10 +91,11 @@ export interface MarkboardSurface {
    */
   jump(mark: Mark): void
   /**
-   * Put the mark's answer into its Session's composer as a plain-text quote.
+   * Put the mark's answer into a composer as a plain-text quote.
    * @param mark - the mark to quote.
+   * @param into - Session owning the target composer; defaults to the Session on screen.
    */
-  fill(mark: Mark): void
+  fill(mark: Mark, into?: string): void
   /** Open the markboard page for the Session on screen. */
   openPanel(): void
   /** @param text - notice body. @param action - optional single action. */
@@ -307,39 +308,71 @@ export class MarkboardSurfaceImpl implements MarkboardSurface {
     }
   }
 
-  fill(mark: Mark): void {
+  /**
+   * Put the mark's answer into a composer as a plain-text quote.
+   *
+   * The quote lands where the user is typing, not where the mark came from: a
+   * card from another Session is carried into the composer on screen instead of
+   * opening that Session. Filling a mark's own Session replaces its draft, while
+   * carrying one across appends — text already typed for the current Session
+   * survives. Either way the previous draft is one undo away.
+   *
+   * @param mark - the mark to quote.
+   * @param into - Session owning the target composer; defaults to the Session on screen.
+   */
+  fill(mark: Mark, into?: string): void {
     const text = draftText(mark, this.t('panel.turn', { turn: mark.turn }))
-    const run = async (): Promise<void> => {
-      if (this.ctx.sidebarRight.mounted.getSnapshot() !== mark.sessionId) {
-        this.ctx.uiWorkspace.openSession(mark.sessionId as SessionId)
-        await delay(150)
-      }
-      const binding = this.ctx.sessions.binding(mark.sessionId as SessionId)
-      if (binding === undefined) {
-        this.notify(this.t('toast.fillFailed'))
-        return
-      }
-      const previous = this.draftOf(mark.sessionId)
-      const result = this.ctx.conversation.input.requestDraftInitialization(binding, {
-        prompt: text,
-        clearPreviousDraft: true,
-      })
-      if (result === 'blocked') {
-        this.notify(this.t('toast.fillFailed'))
-        return
-      }
-      this.notify(this.t('toast.filled'), previous === undefined || previous === '' ? undefined : {
-        label: this.t('action.undo'),
-        run: () => {
-          this.ctx.conversation.input.requestDraftInitialization(binding, {
-            prompt: previous,
-            clearPreviousDraft: true,
-          })
-          this.dismissToast()
-        },
-      })
+    const target = fillTarget(mark, into, this.ctx.sidebarRight.mounted.getSnapshot())
+    if (target === undefined) {
+      this.notify(this.t('panel.noSession'))
+      return
     }
-    void run()
+    const binding = this.ctx.sessions.binding(target.sessionId as SessionId)
+    if (binding === undefined) {
+      this.notify(this.t('toast.fillFailed'))
+      return
+    }
+    // Read the target draft first: the initialization below overwrites it.
+    const previous = this.draftOf(target.sessionId)
+    if (!this.initialize(binding, text, target.mode)) {
+      this.notify(this.t('toast.fillFailed'))
+      return
+    }
+    const title = this.titleOf(mark.sessionId) === '' ? mark.sessionId : this.titleOf(mark.sessionId)
+    this.notify(
+      target.mode === 'replace' ? this.t('toast.filled') : this.t('toast.filledOther', { title }),
+      previous === undefined || previous === ''
+        ? undefined
+        : {
+            label: this.t('action.undo'),
+            run: () => {
+              this.initialize(binding, previous, 'replace')
+              this.dismissToast()
+            },
+          },
+    )
+  }
+
+  /**
+   * Hand one draft initialization to the input facade, swallowing the refusal a
+   * Session teardown between lookup and call would raise.
+   * @param binding - target Session generation.
+   * @param prompt - text to place.
+   * @param mode - replace the draft, or append after what is already typed.
+   * @returns whether the composer took the text.
+   */
+  private initialize(binding: SessionBinding, prompt: string, mode: 'replace' | 'append'): boolean {
+    const options: DraftInitializationOptions = mode === 'append'
+      ? { prompt, whenDraftExists: 'append' }
+      : { prompt, whenDraftExists: 'replace' }
+    let result: DraftInitializationResult
+    try {
+      result = this.ctx.conversation.input.requestDraftInitialization(binding, options)
+    } catch (error) {
+      console.error('[dsh-markboard] draft initialization failed:', error)
+      return false
+    }
+    return result === 'applied'
   }
 
   /** The Session's draft before this fill, read from the input facade the shell owns. */
@@ -366,7 +399,7 @@ function textOfContent(content: readonly unknown[] | undefined): string {
   return parts.join('\n')
 }
 
-/** One bounded wait, used by the reveal and fill flows. */
+/** One bounded wait, used by the reveal flow. */
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => { window.setTimeout(resolve, ms) })
 }
