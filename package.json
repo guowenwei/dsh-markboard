@@ -1,6 +1,6 @@
 {
   "name": "dsh-markboard",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Bookmark conversation turns in DeepSeek Harness: name the turns you care about, jump back to them, and quote their answer straight into the composer.",
   "keywords": [
     "dsh",
